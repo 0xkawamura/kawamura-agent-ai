@@ -500,8 +500,8 @@ const SLIDES = [
     body: (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 15, color: '#374151', lineHeight: 1.7 }}>
         <p>Kawamura is an <strong>autonomous AI agent</strong> built for the Seedstr Hackathon. It watches for mystery prompts and responds — without you lifting a finger.</p>
-        <p>Every prompt is <strong>classified, generated, built, and submitted</strong> automatically — just like a real hackathon competitor.</p>
-        <p>You don't code — <strong>your agent does</strong>. Launch it, and watch it compete.</p>
+        <p>Every prompt is <strong>classified, generated, built, and submitted</strong> automatically.</p>
+        <p>You don't code — <strong>your agent does</strong>.</p>
       </div>
     ),
     btn: 'interesting →',
@@ -578,7 +578,6 @@ function WelcomeModal({ onClose }: { onClose: () => void }) {
         {slide === 2 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {[
-              ['This is an', 'experimental hackathon project'],
               ['The agent runs', 'autonomously — you just watch'],
               ['Template generation:', '~200ms fast-path'],
               ['Full AI generation:', '~10 seconds'],
