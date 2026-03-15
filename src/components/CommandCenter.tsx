@@ -624,10 +624,9 @@ export default function CommandCenter() {
         display: 'flex', alignItems: 'center', gap: 18,
         zIndex: 10,
       }}>
-        <span style={{ fontSize: 20, fontWeight: 900, color: OG, letterSpacing: '-0.03em' }}>KAWAMURA</span>
-        <span style={{ background: OG, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>
-          AGENT
-        </span>
+        <img src="/kawamura.svg" alt="Kawamura" style={{ height: 28, width: 'auto', display: 'block' }} />
+        <span style={{ fontSize: 20, fontWeight: 900, color: OG, letterSpacing: '-0.03em'                
+          }}>KAWAMURA AGENT</span>
 
         <div style={{ flex: 1 }} />
 
