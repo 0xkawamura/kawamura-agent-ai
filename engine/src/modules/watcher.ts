@@ -79,6 +79,7 @@ export class Watcher {
           this.bus.emit('prompt_ready', {
             prompt: result.prompt,
             jobId: result.jobId,
+            jobType: result.jobType,
             raw: result.raw,
           });
         }

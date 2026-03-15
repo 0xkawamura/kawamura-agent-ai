@@ -101,6 +101,7 @@ export class SeedstrClient {
           ready: true,
           prompt,
           jobId: job.id,
+          jobType: (job.jobType as string) ?? 'STANDARD',
           reason: `Job ${job.id} has a prompt (budget: $${effectiveBudget}).`,
           raw: { jobId: job.id, job },
         };
@@ -176,6 +177,37 @@ export class SeedstrClient {
 
   async submitTextOnly(jobId: string, content: string): Promise<SubmissionResult> {
     return this.submitResponse(jobId, content);
+  }
+
+  /** Accept a SWARM job (v2) — must be accepted before processing. */
+  async acceptJob(jobId: string): Promise<{ accepted: boolean; raw: unknown }> {
+    const result = await this.request<Record<string, unknown>>(
+      `${this.config.seedstrApiUrl}/jobs/${jobId}/accept`,
+      { method: 'POST' },
+    );
+    return { accepted: true, raw: result };
+  }
+
+  /** Submit via v2 with responseType for SWARM auto-pay. */
+  async submitResponseV2(
+    jobId: string,
+    content: string,
+    responseType: 'TEXT' | 'FILE' = 'TEXT',
+    files?: FileAttachment[],
+  ): Promise<SubmissionResult> {
+    const body: Record<string, unknown> = { content, responseType };
+    if (files?.length) body.files = files;
+
+    const result = await this.request<Record<string, unknown>>(
+      `${this.config.seedstrApiUrl}/jobs/${jobId}/respond`,
+      { method: 'POST', body: JSON.stringify(body) },
+    );
+
+    return {
+      submissionId: (result.responseId ?? result.submissionId) as string | undefined,
+      jobId,
+      raw: result,
+    };
   }
 
   private async request<T>(url: string, options: RequestInit): Promise<T> {

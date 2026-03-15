@@ -78,7 +78,7 @@ export class CoreEngine {
       this.emitLog('success', `Mystery prompt received! Job: ${event.jobId ?? 'manual'}`, 'Watcher');
       this.emitState();
 
-      void this.executePipeline(event.prompt, event.jobId);
+      void this.executePipeline(event.prompt, event.jobId, event.jobType);
     });
 
     this.bus.on('error', event => {
@@ -89,8 +89,25 @@ export class CoreEngine {
     });
   }
 
-  private async executePipeline(prompt: string, jobId?: string): Promise<void> {
+  private async executePipeline(prompt: string, jobId?: string, jobType?: string): Promise<void> {
     try {
+      // ─── SWARM: Accept job before processing ─────────
+      if (jobType === 'SWARM' && jobId) {
+        this.emitLog('info', `SWARM job detected. Accepting job ${jobId}...`, 'CoreEngine');
+        try {
+          await this.seedstrClient.acceptJob(jobId);
+          this.emitLog('success', `SWARM job ${jobId} accepted.`, 'CoreEngine');
+        } catch (acceptErr) {
+          const msg = acceptErr instanceof Error ? acceptErr.message : String(acceptErr);
+          if (msg.includes('job_full') || msg.includes('All agent slots') || msg.includes('already accepted')) {
+            this.emitLog('warn', `SWARM job ${jobId} skipped: ${msg}`, 'CoreEngine');
+            if (jobId) this.watcher.markProcessed(jobId);
+            return;
+          }
+          throw acceptErr;
+        }
+      }
+
       // Stage: classifying + generating
       this.setStage('classifying');
       this.emitLog('info', 'Stage 1 / Detecting response type & classifying...', 'Brain');

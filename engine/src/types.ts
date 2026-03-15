@@ -39,6 +39,7 @@ export interface PollResult {
   ready: boolean;
   prompt?: string;
   jobId?: string;
+  jobType?: string;
   reason: string;
   raw: unknown;
 }
@@ -89,6 +90,7 @@ export interface SubmissionResult {
 export interface PromptReadyEvent {
   prompt: string;
   jobId?: string;
+  jobType?: string;
   raw: unknown;
 }
 
