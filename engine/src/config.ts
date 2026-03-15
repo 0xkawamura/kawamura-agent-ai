@@ -131,7 +131,7 @@ const SYSTEM_PROMPT = [
 ].join('\n');
 
 export function loadConfig(): EngineConfig {
-  const pollMinMs = toInt(process.env.POLL_INTERVAL, 5) * 1000;
+  const pollMinMs = toInt(process.env.POLL_INTERVAL, 3) * 1000;
   const pollMaxMs = pollMinMs * 2;
 
   return {
