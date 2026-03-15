@@ -343,14 +343,45 @@ function RecentJobs({ jobs, state }: { jobs: Job[]; state: EngineState | null })
                   <span style={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'JetBrains Mono, monospace' }}>
                     🏆 {job.jobId ? `${job.jobId.slice(0, 12)}…` : 'manual'}
                   </span>
-                  <span style={{
-                    fontSize: 10, padding: '2px 9px', borderRadius: 3, cursor: 'default',
-                    border: `1px solid ${job.success ? OG_BD : '#FCA5A5'}`,
-                    color: job.success ? OG : '#EF4444',
-                    background: job.success ? OG_BG : '#FEF2F2',
-                  }}>
-                    {job.success ? 'submitted ›' : 'failed'}
-                  </span>
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                    {job.success && job.responseType !== 'TEXT' && (
+                      <>
+                        <span
+                          onClick={() => window.open(`${ENGINE_URL}/preview`, '_blank')}
+                          style={{
+                            fontSize: 10, padding: '2px 9px', borderRadius: 3, cursor: 'pointer',
+                            border: '1px solid #DBEAFE', color: '#2563EB', background: '#EFF6FF',
+                            fontWeight: 600,
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#DBEAFE')}
+                          onMouseLeave={e => (e.currentTarget.style.background = '#EFF6FF')}
+                        >
+                          👁 Preview
+                        </span>
+                        <a
+                          href={`${ENGINE_URL}/download`}
+                          download
+                          style={{
+                            fontSize: 10, padding: '2px 9px', borderRadius: 3, cursor: 'pointer',
+                            border: '1px solid #D1FAE5', color: '#059669', background: '#ECFDF5',
+                            fontWeight: 600, textDecoration: 'none',
+                          }}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#D1FAE5')}
+                          onMouseLeave={e => (e.currentTarget.style.background = '#ECFDF5')}
+                        >
+                          ↓ ZIP
+                        </a>
+                      </>
+                    )}
+                    <span style={{
+                      fontSize: 10, padding: '2px 9px', borderRadius: 3, cursor: 'default',
+                      border: `1px solid ${job.success ? OG_BD : '#FCA5A5'}`,
+                      color: job.success ? OG : '#EF4444',
+                      background: job.success ? OG_BG : '#FEF2F2',
+                    }}>
+                      {job.success ? 'submitted ›' : 'failed'}
+                    </span>
+                  </div>
                 </div>
               </div>
             )

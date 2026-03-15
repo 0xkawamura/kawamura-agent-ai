@@ -100,6 +100,65 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  if (req.method === 'GET' && url.pathname === '/preview') {
+    try {
+      const { readFile } = await import('node:fs/promises');
+      const htmlPath = resolve(config.outputDir, 'index.html');
+      const html = await readFile(htmlPath, 'utf8');
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Access-Control-Allow-Origin': config.corsOrigin,
+      });
+      res.end(html);
+    } catch {
+      res.writeHead(404, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': config.corsOrigin,
+      });
+      res.end(JSON.stringify({ error: 'No preview available yet. Generate something first.' }));
+    }
+    return;
+  }
+
+  if (req.method === 'GET' && url.pathname === '/download') {
+    try {
+      const { readdir, readFile: rf } = await import('node:fs/promises');
+      // Find most recent zip in archiveDir, fall back to outputDir
+      let zipPath: string | null = null;
+      try {
+        const files = await readdir(config.archiveDir);
+        const zips = files.filter(f => f.endsWith('.zip')).sort().reverse();
+        if (zips.length > 0) zipPath = resolve(config.archiveDir, zips[0]);
+      } catch { /* no archives yet */ }
+
+      if (!zipPath) {
+        // fallback: look for zip directly in outputDir parent
+        const files = await readdir(resolve(config.outputDir, '..'));
+        const zips = files.filter(f => f.endsWith('.zip')).sort().reverse();
+        if (zips.length > 0) zipPath = resolve(config.outputDir, '..', zips[0]);
+      }
+
+      if (!zipPath) throw new Error('No ZIP found.');
+
+      const zipData = await rf(zipPath);
+      const filename = zipPath.split('/').pop() ?? 'kawamura-output.zip';
+      res.writeHead(200, {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Content-Length': String(zipData.length),
+        'Access-Control-Allow-Origin': config.corsOrigin,
+      });
+      res.end(zipData);
+    } catch {
+      res.writeHead(404, {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': config.corsOrigin,
+      });
+      res.end(JSON.stringify({ error: 'No ZIP available yet. Generate something first.' }));
+    }
+    return;
+  }
+
   if (req.method === 'POST' && url.pathname === '/control/start') {
     sendJson(res, 200, engine.start(), config.corsOrigin);
     return;
