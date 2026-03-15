@@ -174,7 +174,7 @@ export class Brain {
     _prompt: string,
     classification: ClassificationResult,
   ): Promise<BuildArtifact & { classification: ClassificationResult }> {
-    const files = generateFromTemplate(classification.templateSlug, classification.slots);
+    const files = generateFromTemplate(classification.templateSlug, classification.slots, classification.accentColor);
 
     const validation = validateFiles(files);
     if (!validation.valid) {

@@ -48,6 +48,7 @@ export interface ClassificationResult {
   templateSlug: string;
   confidence: number;
   slots: Record<string, string>;
+  accentColor?: string;
 }
 
 export interface BuildArtifactFile {

@@ -55,6 +55,24 @@ const TEMPLATES: TemplateKeywords[] = [
   },
 ];
 
+const COLOR_MAP: Record<string, string> = {
+  'blue': '#3B82F6', 'navy': '#1D4ED8', 'sky': '#0EA5E9', 'cyan': '#06B6D4',
+  'teal': '#14B8A6', 'green': '#22C55E', 'emerald': '#10B981', 'lime': '#84CC16',
+  'yellow': '#EAB308', 'gold': '#F59E0B', 'orange': '#F97316', 'red': '#EF4444',
+  'rose': '#F43F5E', 'pink': '#EC4899', 'purple': '#A855F7', 'violet': '#8B5CF6',
+  'indigo': '#6366F1', 'white': '#F1F5F9', 'silver': '#94A3B8',
+};
+
+function extractAccentColor(prompt: string): string | undefined {
+  const lower = prompt.toLowerCase();
+  const hexMatch = lower.match(/#([0-9a-f]{6})\b/i);
+  if (hexMatch) return `#${hexMatch[1].toUpperCase()}`;
+  for (const [name, hex] of Object.entries(COLOR_MAP)) {
+    if (lower.includes(name)) return hex;
+  }
+  return undefined;
+}
+
 function keywordScore(prompt: string, keywords: string[]): number {
   const lower = prompt.toLowerCase();
   let hits = 0;
@@ -79,12 +97,15 @@ export class PromptClassifier {
 
     const confidence = Math.min(best.score * 3, 0.95); // scale up a bit
 
+    const accentColor = extractAccentColor(prompt);
+
     if (confidence >= 0.6) {
       const template = TEMPLATES.find(t => t.slug === best.slug)!;
       return {
         templateSlug: best.slug,
         confidence,
         slots: await this.fillSlotsViaLLM(prompt, best.slug, template.slots),
+        accentColor,
       };
     }
 
@@ -107,13 +128,8 @@ export class PromptClassifier {
       const clean = response.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
       const parsed = JSON.parse(clean) as { slug?: string; confidence?: number };
 
-      // If classifier says "none", go full LLM generation
       if (parsed.slug === 'none') {
-        return {
-          templateSlug: 'none',
-          confidence: 0.3,
-          slots: {},
-        };
+        return { templateSlug: 'none', confidence: 0.3, slots: {}, accentColor };
       }
 
       const matchedTemplate = TEMPLATES.find(t => t.slug === parsed.slug) ?? TEMPLATES[0];
@@ -123,14 +139,10 @@ export class PromptClassifier {
         templateSlug: matchedTemplate.slug,
         confidence: llmConfidence,
         slots: await this.fillSlotsViaLLM(prompt, matchedTemplate.slug, matchedTemplate.slots),
+        accentColor,
       };
     } catch {
-      // Fallback: low confidence → full LLM generation path
-      return {
-        templateSlug: 'none',
-        confidence: 0.3,
-        slots: {},
-      };
+      return { templateSlug: 'none', confidence: 0.3, slots: {}, accentColor };
     }
   }
 
