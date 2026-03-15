@@ -80,7 +80,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && url.pathname === '/state') {
-    sendJson(res, 200, engine.getState(), config.corsOrigin);
+    sendJson(res, 200, { ...engine.getState(), agentId: config.agentId }, config.corsOrigin);
     return;
   }
 

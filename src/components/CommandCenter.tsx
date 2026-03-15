@@ -15,11 +15,13 @@ interface EngineState {
   running: boolean; stage: string; processing: boolean
   lastTickAt?: string; lastJobId?: string; lastTemplateSlug?: string
   lastSubmissionAt?: string; lastSubmissionId?: string
-  lastError?: string; jobsProcessed: number
+  lastError?: string; jobsProcessed: number; agentId?: string
 }
 interface Job {
   id: string; num: number; jobId?: string; submissionId?: string
   template?: string; prompt?: string; timestamp: string; success: boolean
+  responseType?: 'TEXT' | 'FILE'
+  jobType?: 'STANDARD' | 'SWARM'
 }
 
 /* ── Shared card shell ────────────────────── */
@@ -318,6 +320,16 @@ function RecentJobs({ jobs, state }: { jobs: Job[]; state: EngineState | null })
                   <span style={{ fontSize: 9, fontWeight: 700, padding: '2px 7px', borderRadius: 3, background: bg, color: text, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                     {slugLabel(job.template)}
                   </span>
+                  {job.responseType && (
+                    <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 3, background: job.responseType === 'TEXT' ? '#EFF6FF' : '#F0FDF4', color: job.responseType === 'TEXT' ? '#2563EB' : '#16A34A', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      {job.responseType}
+                    </span>
+                  )}
+                  {job.jobType === 'SWARM' && (
+                    <span style={{ fontSize: 8, fontWeight: 700, padding: '2px 6px', borderRadius: 3, background: '#FDF4FF', color: '#A855F7', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      SWARM
+                    </span>
+                  )}
                   <span style={{ fontSize: 10, color: '#9CA3AF', marginLeft: 'auto' }}>
                     {new Date(job.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -350,10 +362,10 @@ function RecentJobs({ jobs, state }: { jobs: Job[]; state: EngineState | null })
 }
 
 /* ── Pipeline (Leaderboard) ───────────────── */
-const STAGES = ['watching', 'classifying', 'generating', 'building', 'packing', 'submitting', 'completed']
+const STAGES = ['watching', 'prompt_received', 'classifying', 'generating', 'building', 'packing', 'submitting', 'completed']
 const STAGE_LABEL: Record<string, string> = {
   idle: 'Idle', watching: 'Watching', prompt_received: 'Received',
-  classifying: 'Classifying', generating: 'Generating', building: 'Building',
+  classifying: 'Detecting', generating: 'Generating', building: 'Building',
   packing: 'Packing', submitting: 'Submitting', completed: 'Completed', error: 'Error',
 }
 
@@ -482,8 +494,8 @@ export default function CommandCenter() {
 
       es.addEventListener('submitted', e => {
         try {
-          const d = JSON.parse((e as MessageEvent).data) as { submissionId?: string; jobId?: string }
-          addJob({ id: `${Date.now()}-${Math.random()}`, jobId: d.jobId, submissionId: d.submissionId, prompt: promptRef.current, timestamp: new Date().toISOString(), success: true })
+          const d = JSON.parse((e as MessageEvent).data) as { submissionId?: string; jobId?: string; responseType?: 'TEXT' | 'FILE'; jobType?: 'STANDARD' | 'SWARM' }
+          addJob({ id: `${Date.now()}-${Math.random()}`, jobId: d.jobId, submissionId: d.submissionId, prompt: promptRef.current, timestamp: new Date().toISOString(), success: true, responseType: d.responseType, jobType: d.jobType })
           promptRef.current = undefined
         } catch {/**/}
       })
@@ -615,7 +627,7 @@ export default function CommandCenter() {
           <StatCard label="Jobs Processed"  value={state?.jobsProcessed ?? 0} accent />
           <StatCard label="Submitted"        value={jobs.filter(j => j.success).length} accent />
           <StatCard label="Templates"        value={9} />
-          <StatCard label="Agent ID"         value="cmmqt3d…" />
+          <StatCard label="Agent ID"         value={state?.agentId ? `${state.agentId.slice(0, 8)}…` : '—'} />
           <StatCard label="Stage"            value={STAGE_LABEL[state?.stage ?? 'idle'] ?? 'Idle'} accent />
         </div>
 

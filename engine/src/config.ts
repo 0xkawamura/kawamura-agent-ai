@@ -35,6 +35,7 @@ export interface EngineConfig {
   outputDir: string;
   archiveDir: string;
   logLevel: string;
+  agentId: string;
 }
 
 const SYSTEM_PROMPT = [
@@ -152,6 +153,7 @@ export function loadConfig(): EngineConfig {
     outputDir: resolve(process.cwd(), process.env.ENGINE_OUTPUT_DIR ?? 'engine/runs/current'),
     archiveDir: resolve(process.cwd(), process.env.ENGINE_ARCHIVE_DIR ?? 'engine/runs/archives'),
     logLevel: process.env.LOG_LEVEL ?? 'info',
+    agentId: process.env.AGENT_ID ?? process.env.SEEDSTR_API_KEY?.slice(0, 8) ?? 'kawamura',
   };
 }
 
