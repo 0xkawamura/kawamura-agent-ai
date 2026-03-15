@@ -84,6 +84,12 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+
+  if (req.method === 'GET' && url.pathname === '/jobs') {
+    sendJson(res, 200, { jobs: engine.getJobs() }, config.corsOrigin);
+    return;
+  }
+
   if (req.method === 'GET' && url.pathname === '/templates') {
     sendJson(res, 200, { templates: TEMPLATE_SLUGS }, config.corsOrigin);
     return;

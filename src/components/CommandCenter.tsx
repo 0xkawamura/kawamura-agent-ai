@@ -521,12 +521,34 @@ export default function CommandCenter() {
 
     ;(async () => {
       try {
-        const r = await fetch(`${ENGINE_URL}/state`)
-        if (r.ok) {
-          const d = await r.json() as EngineState
+        const [stateRes, jobsRes] = await Promise.all([
+          fetch(`${ENGINE_URL}/state`),
+          fetch(`${ENGINE_URL}/jobs`),
+        ])
+        if (stateRes.ok) {
+          const d = await stateRes.json() as EngineState
           setState(d)
           setConnected(true)
           if (d.agentId) agentIdRef.current = d.agentId
+        }
+        if (jobsRes.ok) {
+          const d = await jobsRes.json() as { jobs: Array<{ jobId: string; prompt: string; template?: string; responseType?: 'TEXT' | 'FILE'; jobType?: string; submissionId?: string; success: boolean; timestamp: string }> }
+          if (d.jobs?.length) {
+            const mapped = d.jobs.map((j, i) => ({
+              id: `server-${i}`,
+              num: i + 1,
+              jobId: j.jobId,
+              submissionId: j.submissionId,
+              template: j.template,
+              prompt: j.prompt,
+              timestamp: j.timestamp,
+              success: j.success,
+              responseType: j.responseType,
+              jobType: j.jobType as 'STANDARD' | 'SWARM' | undefined,
+            }))
+            counterRef.current = mapped.length
+            setJobs(mapped)
+          }
         }
       } catch {/**/}
     })()

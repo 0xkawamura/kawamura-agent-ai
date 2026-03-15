@@ -7,6 +7,17 @@ import type { SeedstrClient } from '../providers/seedstr-client.js';
 import type { EngineState, EngineStage } from '../types.js';
 import { createLog } from '../utils/logger.js';
 
+export interface JobRecord {
+  jobId: string;
+  prompt: string;
+  template?: string;
+  responseType: 'TEXT' | 'FILE';
+  jobType?: string;
+  submissionId?: string;
+  success: boolean;
+  timestamp: string;
+}
+
 export class CoreEngine {
   private readonly state: EngineState = {
     running: false,
@@ -14,6 +25,8 @@ export class CoreEngine {
     stage: 'idle',
     jobsProcessed: 0,
   };
+
+  private readonly recentJobs: JobRecord[] = [];
 
   constructor(
     private readonly bus: EngineEventBus,
@@ -28,6 +41,10 @@ export class CoreEngine {
 
   getState(): EngineState {
     return { ...this.state };
+  }
+
+  getJobs(): JobRecord[] {
+    return [...this.recentJobs];
   }
 
   start(): EngineState {
@@ -127,10 +144,12 @@ export class CoreEngine {
         this.emitLog('info', `Submitting TEXT response${jobId ? ` to job ${jobId}` : ''}...`, 'Packer');
         this.emitState();
 
+        let textSubmissionId: string | undefined;
         if (jobId) {
-          const submissionResult = await this.seedstrClient.submitTextOnly(jobId, result.textContent);
-          this.bus.emit('submitted', submissionResult);
-          this.state.lastSubmissionId = submissionResult.submissionId;
+          const sub = await this.seedstrClient.submitTextOnly(jobId, result.textContent);
+          this.bus.emit('submitted', sub);
+          this.state.lastSubmissionId = sub.submissionId;
+          textSubmissionId = sub.submissionId;
         } else {
           this.emitLog('warn', 'No jobId — TEXT response generated but not submitted.', 'CoreEngine');
         }
@@ -138,6 +157,7 @@ export class CoreEngine {
         this.state.lastSubmissionAt = new Date().toISOString();
         this.state.jobsProcessed += 1;
         if (jobId) this.watcher.markProcessed(jobId);
+        this.recordJob({ jobId: jobId ?? 'manual', prompt, responseType: 'TEXT', submissionId: textSubmissionId, success: true });
         this.setStage('completed');
         this.emitLog('success', 'TEXT response submitted successfully!', 'CoreEngine');
         return;
@@ -192,6 +212,7 @@ export class CoreEngine {
 
       this.setStage('completed');
       this.emitLog('success', `Submitted! ID: ${submissionResult.submissionId ?? 'pending'}`, 'Packer');
+      this.recordJob({ jobId: jobId ?? 'manual', prompt, responseType: 'FILE', template: templateSlug, submissionId: submissionResult.submissionId, success: true });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       const msg = err.message;
@@ -206,6 +227,7 @@ export class CoreEngine {
         this.bus.emit('error', { stage: this.state.stage, error: err });
         // Still mark as processed to avoid infinite retry loops
         if (jobId) this.watcher.markProcessed(jobId);
+        this.recordJob({ jobId: jobId ?? 'manual', prompt, responseType: 'FILE', success: false });
       }
     } finally {
       this.state.processing = false;
@@ -226,5 +248,14 @@ export class CoreEngine {
     const log = createLog(source, level, message);
     console.log(`[${source}] [${level.toUpperCase()}] ${message}`);
     this.bus.emit('log', log);
+  }
+
+  private recordJob(data: { jobId: string; prompt: string; responseType: 'TEXT' | 'FILE'; template?: string; jobType?: string; submissionId?: string; success: boolean }): void {
+    this.recentJobs.push({
+      ...data,
+      timestamp: new Date().toISOString(),
+    });
+    // Keep last 50
+    if (this.recentJobs.length > 50) this.recentJobs.splice(0, this.recentJobs.length - 50);
   }
 }
