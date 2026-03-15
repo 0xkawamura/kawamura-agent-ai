@@ -60,8 +60,21 @@ function CardHeader({ left, right }: { left: React.ReactNode; right?: React.Reac
 }
 
 /* ── Inject Modal ────────────────────────── */
+const TEMPLATES_META = [
+  { slug: 'landing-page', label: 'Landing Page', bg: '#FEF3C7', text: '#D97706', prompt: 'Create a landing page for a SaaS productivity app called Flowdesk' },
+  { slug: 'portfolio', label: 'Portfolio', bg: '#EDE9FE', text: '#7C3AED', prompt: 'Build a portfolio for a full-stack developer named Alex Chen' },
+  { slug: 'dashboard', label: 'Dashboard', bg: '#DBEAFE', text: '#2563EB', prompt: 'Make an analytics dashboard for an e-commerce store' },
+  { slug: 'tool-app', label: 'Tool App', bg: '#D1FAE5', text: '#059669', prompt: 'Build a text case converter and formatter tool' },
+  { slug: 'ai-agent-profile', label: 'AI Agent', bg: 'rgba(249,115,22,0.08)', text: '#F97316', prompt: 'Create a profile page for an AI assistant named Atlas' },
+  { slug: 'ecommerce', label: 'Ecommerce', bg: '#FCE7F3', text: '#DB2777', prompt: 'Build an online store for handmade artisan jewelry' },
+  { slug: 'blog', label: 'Blog', bg: '#ECFDF5', text: '#047857', prompt: 'Create a tech blog called DevPulse about web development' },
+  { slug: 'game', label: 'Game', bg: '#FFF7ED', text: '#EA580C', prompt: 'Make a trivia quiz game about world geography' },
+  { slug: 'form-builder', label: 'Form Builder', bg: '#F0F9FF', text: '#0369A1', prompt: 'Build a multi-step onboarding form for a SaaS startup' },
+]
+
 function InjectModal({ onSubmit, onClose }: { onSubmit: (p: string) => void; onClose: () => void }) {
   const [value, setValue] = useState('')
+  const [activeSlug, setActiveSlug] = useState<string | null>(null)
   const taRef = useRef<HTMLTextAreaElement>(null)
 
   useEffect(() => {
@@ -73,14 +86,13 @@ function InjectModal({ onSubmit, onClose }: { onSubmit: (p: string) => void; onC
 
   const submit = () => { if (value.trim()) { onSubmit(value.trim()); onClose() } }
 
-  const EXAMPLES = [
-    'Build a portfolio for a creative developer',
-    'Create a SaaS landing page for a note-taking app',
-    'Make a quiz game about world capitals',
-  ]
+  const pickTemplate = (t: typeof TEMPLATES_META[0]) => {
+    setActiveSlug(t.slug)
+    setValue(t.prompt)
+    taRef.current?.focus()
+  }
 
   return (
-    /* Backdrop */
     <div
       onClick={onClose}
       style={{
@@ -91,106 +103,102 @@ function InjectModal({ onSubmit, onClose }: { onSubmit: (p: string) => void; onC
         animation: 'fadeIn 0.15s ease',
       }}
     >
-      {/* Card */}
       <div
         onClick={e => e.stopPropagation()}
         style={{
           background: '#fff',
           borderRadius: 20,
-          padding: '40px 40px 32px',
-          width: 560,
+          padding: '36px 36px 28px',
+          width: 580,
           maxWidth: '92vw',
           boxShadow: '0 24px 60px rgba(0,0,0,0.18)',
           animation: 'slideUp 0.18s ease',
           display: 'flex',
           flexDirection: 'column',
-          gap: 20,
+          gap: 18,
         }}
       >
         {/* Title */}
         <div>
           <h2 style={{
             fontFamily: 'JetBrains Mono, monospace',
-            fontWeight: 700,
-            fontSize: 28,
-            color: OG,
-            letterSpacing: '0.01em',
-            textTransform: 'uppercase',
-            marginBottom: 10,
+            fontWeight: 700, fontSize: 24, color: OG,
+            letterSpacing: '0.01em', textTransform: 'uppercase', marginBottom: 6,
           }}>
-            INJECT PROMPT
+            INPUT PROMPT
           </h2>
-          <p style={{ fontSize: 14, color: '#374151', lineHeight: 1.65 }}>
-            Manually send a <strong>mystery prompt</strong> to the engine. The agent will classify it,
-            pick the best template or use full AI generation, build a complete front-end,
-            and submit it — just like a real hackathon job.
+          <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>
+            Pick a template or write a custom prompt — the agent will build and submit it.
           </p>
         </div>
 
-        {/* Textarea */}
+        {/* Templates grid */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <label style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+          <label style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+            Templates
+          </label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+            {TEMPLATES_META.map(t => (
+              <button
+                key={t.slug}
+                onClick={() => pickTemplate(t)}
+                style={{
+                  padding: '8px 10px',
+                  background: activeSlug === t.slug ? t.bg : '#F9FAFB',
+                  border: `1.5px solid ${activeSlug === t.slug ? t.text : '#E5E7EB'}`,
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontSize: 11, fontWeight: 600,
+                  color: activeSlug === t.slug ? t.text : '#6B7280',
+                  textAlign: 'left',
+                  transition: 'all 0.12s',
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
+                }}
+                onMouseEnter={e => { if (activeSlug !== t.slug) { e.currentTarget.style.background = t.bg; e.currentTarget.style.color = t.text; e.currentTarget.style.borderColor = t.text } }}
+                onMouseLeave={e => { if (activeSlug !== t.slug) { e.currentTarget.style.background = '#F9FAFB'; e.currentTarget.style.color = '#6B7280'; e.currentTarget.style.borderColor = '#E5E7EB' } }}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Textarea */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
             Prompt
           </label>
           <textarea
             ref={taRef}
             value={value}
-            onChange={e => setValue(e.target.value)}
+            onChange={e => { setValue(e.target.value); if (!e.target.value.trim()) setActiveSlug(null) }}
             onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit() }}
             placeholder="e.g. Build a landing page for a meditation app..."
-            rows={4}
+            rows={3}
             style={{
-              width: '100%',
-              padding: '12px 14px',
-              fontSize: 13,
-              fontFamily: 'Plus Jakarta Sans, sans-serif',
-              color: '#111827',
-              background: '#FAFAF9',
+              width: '100%', padding: '11px 13px',
+              fontSize: 13, fontFamily: 'Plus Jakarta Sans, sans-serif',
+              color: '#111827', background: '#FAFAF9',
               border: `1.5px solid ${value.trim() ? OG_BD : '#E5E7EB'}`,
-              borderRadius: 10,
-              resize: 'vertical',
-              outline: 'none',
-              lineHeight: 1.6,
-              transition: 'border-color 0.15s',
+              borderRadius: 10, resize: 'vertical', outline: 'none',
+              lineHeight: 1.6, transition: 'border-color 0.15s',
             }}
           />
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {EXAMPLES.map(ex => (
-              <span
-                key={ex}
-                onClick={() => setValue(ex)}
-                style={{
-                  fontSize: 10, padding: '3px 9px', borderRadius: 99,
-                  background: '#F3F4F6', color: '#6B7280', cursor: 'pointer',
-                  border: '1px solid #E5E7EB',
-                  transition: 'background 0.1s',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = OG_BG)}
-                onMouseLeave={e => (e.currentTarget.style.background = '#F3F4F6')}
-              >
-                {ex.slice(0, 38)}…
-              </span>
-            ))}
-          </div>
         </div>
 
-        {/* Submit button */}
+        {/* Submit */}
         <button
           onClick={submit}
           disabled={!value.trim()}
           style={{
-            width: '100%',
-            padding: '16px',
+            width: '100%', padding: '14px',
             background: value.trim() ? OG : '#F3F4F6',
-            border: 'none',
-            borderRadius: 999,
-            fontSize: 12,
-            fontWeight: 700,
+            border: 'none', borderRadius: 999,
+            fontSize: 12, fontWeight: 700,
             fontFamily: 'JetBrains Mono, monospace',
             color: value.trim() ? '#fff' : '#9CA3AF',
             cursor: value.trim() ? 'pointer' : 'not-allowed',
-            letterSpacing: '0.05em',
-            transition: 'opacity 0.15s, transform 0.1s',
+            letterSpacing: '0.05em', transition: 'opacity 0.15s, transform 0.1s',
             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
           onMouseEnter={e => { if (value.trim()) e.currentTarget.style.opacity = '0.85' }}
@@ -198,27 +206,12 @@ function InjectModal({ onSubmit, onClose }: { onSubmit: (p: string) => void; onC
           onMouseDown={e => { if (value.trim()) e.currentTarget.style.transform = 'scale(0.98)' }}
           onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
         >
-          <Syringe size={14} /> INJECT PROMPT
+          <Syringe size={13} /> INPUT PROMPT
         </button>
 
-        {/* Dots + hint */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex', gap: 6 }}>
-            {[0, 1, 2, 3].map(i => (
-              <span key={i} style={{
-                width: i === 0 ? 8 : 6,
-                height: i === 0 ? 8 : 6,
-                borderRadius: '50%',
-                background: i === 0 ? OG : '#D1D5DB',
-                display: 'inline-block',
-                marginTop: i === 0 ? 0 : 1,
-              }} />
-            ))}
-          </div>
-          <span style={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'JetBrains Mono, monospace' }}>
-            ⌘↵ to submit · esc to close
-          </span>
-        </div>
+        <span style={{ textAlign: 'center', fontSize: 10, color: '#D1D5DB', fontFamily: 'JetBrains Mono, monospace' }}>
+          ⌘↵ to submit · esc to close
+        </span>
       </div>
     </div>
   )
@@ -267,16 +260,16 @@ function LiveFeed({ logs }: { logs: LogEntry[] }) {
 
 /* ── Recent Jobs ──────────────────────────── */
 const TEMPLATE_COLORS: Record<string, { bg: string; text: string }> = {
-  'landing-page':    { bg: '#FEF3C7', text: '#D97706' },
-  'portfolio':       { bg: '#EDE9FE', text: '#7C3AED' },
-  'dashboard':       { bg: '#DBEAFE', text: '#2563EB' },
-  'tool-app':        { bg: '#D1FAE5', text: '#059669' },
-  'ai-agent-profile':{ bg: OG_BG,    text: OG        },
-  'ecommerce':       { bg: '#FCE7F3', text: '#DB2777' },
-  'blog':            { bg: '#ECFDF5', text: '#047857' },
-  'game':            { bg: '#FFF7ED', text: '#EA580C' },
-  'form-builder':    { bg: '#F0F9FF', text: '#0369A1' },
-  'none':            { bg: '#F3F0FF', text: '#6D28D9' },  // full LLM path
+  'landing-page': { bg: '#FEF3C7', text: '#D97706' },
+  'portfolio': { bg: '#EDE9FE', text: '#7C3AED' },
+  'dashboard': { bg: '#DBEAFE', text: '#2563EB' },
+  'tool-app': { bg: '#D1FAE5', text: '#059669' },
+  'ai-agent-profile': { bg: OG_BG, text: OG },
+  'ecommerce': { bg: '#FCE7F3', text: '#DB2777' },
+  'blog': { bg: '#ECFDF5', text: '#047857' },
+  'game': { bg: '#FFF7ED', text: '#EA580C' },
+  'form-builder': { bg: '#F0F9FF', text: '#0369A1' },
+  'none': { bg: '#F3F0FF', text: '#6D28D9' },  // full LLM path
 }
 
 // Normalize slug: 'none' → display as 'AI GEN'
@@ -500,18 +493,18 @@ function StatCard({ label, value, accent = false }: { label: string; value: stri
 
 /* ── Root ─────────────────────────────────── */
 export default function CommandCenter() {
-  const [connected, setConnected]   = useState(false)
-  const [state, setState]           = useState<EngineState | null>(null)
-  const [logs, setLogs]             = useState<LogEntry[]>([])
-  const [jobs, setJobs]             = useState<Job[]>([])
+  const [connected, setConnected] = useState(false)
+  const [state, setState] = useState<EngineState | null>(null)
+  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [jobs, setJobs] = useState<Job[]>([])
   const [showInject, setShowInject] = useState(false)
-  const esRef                       = useRef<EventSource | null>(null)
-  const counterRef                  = useRef(0)
-  const promptRef                   = useRef<string | undefined>(undefined)
-  const agentIdRef                  = useRef<string | undefined>(undefined)
+  const [agentId, setAgentId] = useState<string | undefined>(undefined)
+  const esRef = useRef<EventSource | null>(null)
+  const counterRef = useRef(0)
+  const promptRef = useRef<string | undefined>(undefined)
 
-  const addLog  = (l: LogEntry)  => setLogs(p => [...p.slice(-499), l])
-  const addJob  = (j: Omit<Job, 'num'>) => {
+  const addLog = (l: LogEntry) => setLogs(p => [...p.slice(-499), l])
+  const addJob = (j: Omit<Job, 'num'>) => {
     counterRef.current += 1
     setJobs(p => [...p, { ...j, num: counterRef.current }])
   }
@@ -520,22 +513,22 @@ export default function CommandCenter() {
     const connect = () => {
       const es = new EventSource(`${ENGINE_URL}/events`)
       esRef.current = es
-      es.onopen  = () => setConnected(true)
+      es.onopen = () => setConnected(true)
       es.onerror = () => { setConnected(false); es.close(); setTimeout(connect, 3000) }
 
-      es.addEventListener('engine-log',   e => { try { addLog(JSON.parse((e as MessageEvent).data) as LogEntry) }       catch {/**/} })
-      es.addEventListener('engine-state', e => { try { setState(JSON.parse((e as MessageEvent).data) as EngineState) }  catch {/**/} })
+      es.addEventListener('engine-log', e => { try { addLog(JSON.parse((e as MessageEvent).data) as LogEntry) } catch {/**/ } })
+      es.addEventListener('engine-state', e => { try { setState(JSON.parse((e as MessageEvent).data) as EngineState) } catch {/**/ } })
 
       es.addEventListener('submitted', e => {
         try {
           const d = JSON.parse((e as MessageEvent).data) as { submissionId?: string; jobId?: string; responseType?: 'TEXT' | 'FILE'; jobType?: 'STANDARD' | 'SWARM' }
           addJob({ id: `${Date.now()}-${Math.random()}`, jobId: d.jobId, submissionId: d.submissionId, prompt: promptRef.current, timestamp: new Date().toISOString(), success: true, responseType: d.responseType, jobType: d.jobType })
           promptRef.current = undefined
-        } catch {/**/}
+        } catch {/**/ }
       })
 
       es.addEventListener('engine-error', () => {
-        try { addJob({ id: `${Date.now()}-${Math.random()}`, timestamp: new Date().toISOString(), success: false }) } catch {/**/}
+        try { addJob({ id: `${Date.now()}-${Math.random()}`, timestamp: new Date().toISOString(), success: false }) } catch {/**/ }
       })
     }
 
@@ -548,55 +541,55 @@ export default function CommandCenter() {
           const d = await r.json() as EngineState
           setState(d)
           setConnected(true)
-          if (d.agentId) agentIdRef.current = d.agentId
+          if (d.agentId) setAgentId(d.agentId)
         }
       } catch { setConnected(false) }
     }, 5000)
 
-    ;(async () => {
-      try {
-        const [stateRes, jobsRes] = await Promise.all([
-          fetch(`${ENGINE_URL}/state`),
-          fetch(`${ENGINE_URL}/jobs`),
-        ])
-        if (stateRes.ok) {
-          const d = await stateRes.json() as EngineState
-          setState(d)
-          setConnected(true)
-          if (d.agentId) agentIdRef.current = d.agentId
-        }
-        if (jobsRes.ok) {
-          const d = await jobsRes.json() as { jobs: Array<{ jobId: string; prompt: string; template?: string; responseType?: 'TEXT' | 'FILE'; jobType?: string; submissionId?: string; success: boolean; timestamp: string }> }
-          if (d.jobs?.length) {
-            const mapped = d.jobs.map((j, i) => ({
-              id: `server-${i}`,
-              num: i + 1,
-              jobId: j.jobId,
-              submissionId: j.submissionId,
-              template: j.template,
-              prompt: j.prompt,
-              timestamp: j.timestamp,
-              success: j.success,
-              responseType: j.responseType,
-              jobType: j.jobType as 'STANDARD' | 'SWARM' | undefined,
-            }))
-            counterRef.current = mapped.length
-            setJobs(mapped)
+      ; (async () => {
+        try {
+          const [stateRes, jobsRes] = await Promise.all([
+            fetch(`${ENGINE_URL}/state`),
+            fetch(`${ENGINE_URL}/jobs`),
+          ])
+          if (stateRes.ok) {
+            const d = await stateRes.json() as EngineState
+            setState(d)
+            setConnected(true)
+            if (d.agentId) setAgentId(d.agentId)
           }
-        }
-      } catch {/**/}
-    })()
+          if (jobsRes.ok) {
+            const d = await jobsRes.json() as { jobs: Array<{ jobId: string; prompt: string; template?: string; responseType?: 'TEXT' | 'FILE'; jobType?: string; submissionId?: string; success: boolean; timestamp: string }> }
+            if (d.jobs?.length) {
+              const mapped = d.jobs.map((j, i) => ({
+                id: `server-${i}`,
+                num: i + 1,
+                jobId: j.jobId,
+                submissionId: j.submissionId,
+                template: j.template,
+                prompt: j.prompt,
+                timestamp: j.timestamp,
+                success: j.success,
+                responseType: j.responseType,
+                jobType: j.jobType as 'STANDARD' | 'SWARM' | undefined,
+              }))
+              counterRef.current = mapped.length
+              setJobs(mapped)
+            }
+          }
+        } catch {/**/ }
+      })()
 
     return () => { esRef.current?.close(); clearInterval(iv) }
   }, [])
 
   const toggle = async () => {
-    try { await fetch(`${ENGINE_URL}${state?.running ? '/control/stop' : '/control/start'}`, { method: 'POST' }) } catch {/**/}
+    try { await fetch(`${ENGINE_URL}${state?.running ? '/control/stop' : '/control/start'}`, { method: 'POST' }) } catch {/**/ }
   }
 
   const inject = async (p: string) => {
     promptRef.current = p
-    try { await fetch(`${ENGINE_URL}/control/prompt`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: p }) }) } catch {/**/}
+    try { await fetch(`${ENGINE_URL}/control/prompt`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: p }) }) } catch {/**/ }
   }
 
   // Merge latest template slug into last job without a useEffect
@@ -659,7 +652,7 @@ export default function CommandCenter() {
           onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
           onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
         >
-          <Syringe size={12} /> INJECT
+          <Syringe size={12} /> INPUT PROMPT
         </button>
       </header>
 
@@ -680,11 +673,11 @@ export default function CommandCenter() {
 
         {/* Stats row */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, flexShrink: 0 }}>
-          <StatCard label="Jobs Processed"  value={state?.jobsProcessed ?? 0} accent />
-          <StatCard label="Submitted"        value={jobs.filter(j => j.success).length} accent />
-          <StatCard label="Templates"        value={9} />
-          <StatCard label="Agent ID"         value={agentIdRef.current ? `${agentIdRef.current.slice(0, 8)}…` : '—'} />
-          <StatCard label="Stage"            value={STAGE_LABEL[state?.stage ?? 'idle'] ?? 'Idle'} accent />
+          <StatCard label="Jobs Processed" value={state?.jobsProcessed ?? 0} accent />
+          <StatCard label="Submitted" value={jobs.filter(j => j.success).length} accent />
+          <StatCard label="Templates" value={9} />
+          <StatCard label="Agent ID" value={agentId ? `${agentId.slice(0, 8)}…` : '—'} />
+          <StatCard label="Stage" value={STAGE_LABEL[state?.stage ?? 'idle'] ?? 'Idle'} accent />
         </div>
 
         {/* 3-column content area — fills remaining height */}
