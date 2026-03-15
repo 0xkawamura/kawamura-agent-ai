@@ -491,6 +491,163 @@ function StatCard({ label, value, accent = false }: { label: string; value: stri
   )
 }
 
+/* ── Welcome / Onboarding Modal ──────────── */
+const WELCOME_KEY = 'kawamura_welcomed'
+
+const SLIDES = [
+  {
+    title: 'WHAT IS KAWAMURA?',
+    body: (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 15, color: '#374151', lineHeight: 1.7 }}>
+        <p>Kawamura is an <strong>autonomous AI agent</strong> built for the Seedstr Hackathon. It watches for mystery prompts and responds — without you lifting a finger.</p>
+        <p>Every prompt is <strong>classified, generated, built, and submitted</strong> automatically — just like a real hackathon competitor.</p>
+        <p>You don't code — <strong>your agent does</strong>. Launch it, and watch it compete.</p>
+      </div>
+    ),
+    btn: 'interesting →',
+  },
+  {
+    title: 'HOW IT WORKS',
+    body: (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: 14, color: '#374151', lineHeight: 1.65 }}>
+        {[
+          ['WATCH',    'Agent polls Seedstr API for new mystery prompts'],
+          ['CLASSIFY', 'Brain detects type and matches the best template'],
+          ['GENERATE', 'LLM fills content slots or generates full HTML'],
+          ['BUILD',    'Files written to disk and packed into a ZIP'],
+          ['SUBMIT',   'Project uploaded to Seedstr API automatically'],
+        ].map(([step, desc], i) => (
+          <div key={step} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <span style={{ color: OG, fontWeight: 700, fontFamily: 'JetBrains Mono, monospace', fontSize: 13, minWidth: 14, paddingTop: 1 }}>{i + 1}.</span>
+            <span><strong style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{step}</strong> · {desc}</span>
+          </div>
+        ))}
+        <p style={{ marginTop: 6, fontSize: 13, color: '#6B7280' }}>Template fast-path: <strong>~200ms</strong>. Full AI generation: <strong>~10s</strong>.</p>
+      </div>
+    ),
+    btn: 'got it →',
+  },
+  {
+    title: 'ONE LAST THING',
+    body: null, // rendered separately
+    btn: 'LET ME IN',
+  },
+]
+
+function WelcomeModal({ onClose }: { onClose: () => void }) {
+  const [slide, setSlide] = useState(0)
+  const [accepted, setAccepted] = useState(false)
+  const [dontShow, setDontShow] = useState(true)
+
+  const isLast = slide === SLIDES.length - 1
+
+  const advance = () => {
+    if (!isLast) { setSlide(s => s + 1); return }
+    if (!accepted) return
+    if (dontShow) localStorage.setItem(WELCOME_KEY, '1')
+    onClose()
+  }
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      animation: 'fadeIn 0.2s ease',
+    }}>
+      <div style={{
+        background: '#fff', borderRadius: 24,
+        padding: '44px 44px 36px',
+        width: 540, maxWidth: '92vw',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
+        animation: 'slideUp 0.2s ease',
+        display: 'flex', flexDirection: 'column', gap: 24,
+      }}>
+        {/* Title */}
+        <h2 style={{
+          fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+          fontSize: 26, color: OG, letterSpacing: '0.01em', textTransform: 'uppercase',
+          lineHeight: 1.2,
+        }}>
+          {SLIDES[slide].title}
+        </h2>
+
+        {/* Body */}
+        {slide < 2 && SLIDES[slide].body}
+
+        {slide === 2 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              ['This is an', 'experimental hackathon project'],
+              ['The agent runs', 'autonomously — you just watch'],
+              ['Template generation:', '~200ms fast-path'],
+              ['Full AI generation:', '~10 seconds'],
+              ['Output:', 'self-contained HTML + ZIP'],
+            ].map(([pre, bold]) => (
+              <p key={bold} style={{ fontSize: 14, color: '#374151', lineHeight: 1.6, fontFamily: 'JetBrains Mono, monospace' }}>
+                {pre} <strong>{bold}</strong>
+              </p>
+            ))}
+
+            {/* Accept checkbox */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, cursor: 'pointer', fontSize: 14, color: '#374151' }}>
+              <input
+                type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)}
+                style={{ width: 16, height: 16, accentColor: OG, cursor: 'pointer' }}
+              />
+              I understand and accept
+            </label>
+          </div>
+        )}
+
+        {/* CTA button */}
+        <button
+          onClick={advance}
+          disabled={isLast && !accepted}
+          style={{
+            width: '100%', padding: '16px',
+            background: isLast ? (accepted ? OG : '#F3F4F6') : '#F0EBE3',
+            border: 'none', borderRadius: 999,
+            fontSize: 13, fontWeight: 700,
+            fontFamily: 'JetBrains Mono, monospace',
+            color: isLast ? (accepted ? '#fff' : '#9CA3AF') : '#111827',
+            cursor: isLast && !accepted ? 'not-allowed' : 'pointer',
+            letterSpacing: '0.04em',
+            transition: 'background 0.15s, opacity 0.15s',
+          }}
+          onMouseEnter={e => { if (!(isLast && !accepted)) e.currentTarget.style.opacity = '0.85' }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
+        >
+          {SLIDES[slide].btn}
+        </button>
+
+        {/* Last slide: don't show again */}
+        {isLast && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontSize: 13, color: '#6B7280', marginTop: -12 }}>
+            <input
+              type="checkbox" checked={dontShow} onChange={e => setDontShow(e.target.checked)}
+              style={{ width: 14, height: 14, accentColor: OG, cursor: 'pointer' }}
+            />
+            Don't show this again
+          </label>
+        )}
+
+        {/* Pagination dots */}
+        <div style={{ display: 'flex', gap: 7, justifyContent: 'center', marginTop: -8 }}>
+          {SLIDES.map((_, i) => (
+            <span key={i} style={{
+              width: i === slide ? 20 : 7, height: 7, borderRadius: 999,
+              background: i === slide ? OG : '#D1D5DB',
+              transition: 'width 0.2s, background 0.2s',
+              display: 'inline-block',
+            }} />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Root ─────────────────────────────────── */
 export default function CommandCenter() {
   const [connected, setConnected] = useState(false)
@@ -498,6 +655,7 @@ export default function CommandCenter() {
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [jobs, setJobs] = useState<Job[]>([])
   const [showInject, setShowInject] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(() => !localStorage.getItem(WELCOME_KEY))
   const [agentId, setAgentId] = useState<string | undefined>(undefined)
   const esRef = useRef<EventSource | null>(null)
   const counterRef = useRef(0)
@@ -719,6 +877,10 @@ export default function CommandCenter() {
           onSubmit={inject}
           onClose={() => setShowInject(false)}
         />
+      )}
+
+      {showWelcome && (
+        <WelcomeModal onClose={() => setShowWelcome(false)} />
       )}
 
       <style>{`
