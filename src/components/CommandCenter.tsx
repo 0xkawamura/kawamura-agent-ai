@@ -470,7 +470,6 @@ export default function CommandCenter() {
   const [state, setState]           = useState<EngineState | null>(null)
   const [logs, setLogs]             = useState<LogEntry[]>([])
   const [jobs, setJobs]             = useState<Job[]>([])
-  const [search, setSearch]         = useState('')
   const [showInject, setShowInject] = useState(false)
   const esRef                       = useRef<EventSource | null>(null)
   const counterRef                  = useRef(0)
@@ -569,11 +568,6 @@ export default function CommandCenter() {
         <span style={{ background: OG, color: '#fff', fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 999, letterSpacing: '0.05em' }}>
           AGENT
         </span>
-        <nav style={{ display: 'flex', gap: 20 }}>
-          {['JOBS', 'STATUS'].map(n => (
-            <span key={n} style={{ fontSize: 12, fontWeight: 500, color: '#6B7280', cursor: 'pointer', letterSpacing: '0.04em' }}>{n}</span>
-          ))}
-        </nav>
 
         <div style={{ flex: 1 }} />
 
@@ -594,17 +588,6 @@ export default function CommandCenter() {
         }}>
           💉 Inject
         </button>
-
-        <div style={{ display: 'flex', border: '1px solid #E5E7EB', borderRadius: 7, overflow: 'hidden' }}>
-          <input
-            value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search job (id...)"
-            style={{ width: 170, padding: '6px 10px', fontSize: 11, border: 'none', outline: 'none', background: '#fff', color: '#374151', fontFamily: 'Plus Jakarta Sans, sans-serif' }}
-          />
-          <button style={{ background: OG, color: '#fff', border: 'none', padding: '6px 14px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>
-            Search
-          </button>
-        </div>
       </header>
 
       {/* ── Ticker ── */}
