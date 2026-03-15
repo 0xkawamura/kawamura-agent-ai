@@ -489,7 +489,7 @@ export default function CommandCenter() {
       es.onerror = () => { setConnected(false); es.close(); setTimeout(connect, 3000) }
 
       es.addEventListener('engine-log',   e => { try { addLog(JSON.parse((e as MessageEvent).data) as LogEntry) }       catch {/**/} })
-      es.addEventListener('engine-state', e => { try { setState(JSON.parse((e as MessageEvent).data) as EngineState) }  catch {/**/} })
+      es.addEventListener('engine-state', e => { try { const d = JSON.parse((e as MessageEvent).data) as EngineState; setState(prev => ({ ...prev, ...d })) } catch {/**/} })
 
       es.addEventListener('submitted', e => {
         try {
@@ -509,7 +509,7 @@ export default function CommandCenter() {
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${ENGINE_URL}/state`)
-        if (r.ok) { setState(await r.json() as EngineState); setConnected(true) }
+        if (r.ok) { const d = await r.json() as EngineState; setState(prev => ({ ...prev, ...d })); setConnected(true) }
       } catch { setConnected(false) }
     }, 5000)
 

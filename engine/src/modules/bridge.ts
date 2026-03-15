@@ -10,11 +10,13 @@ export class Bridge {
   private readonly clients = new Set<ServerResponse<IncomingMessage>>();
   private heartbeat: NodeJS.Timeout | null = null;
 
-  handleSseConnection(_req: IncomingMessage, res: ServerResponse<IncomingMessage>): void {
+  handleSseConnection(_req: IncomingMessage, res: ServerResponse<IncomingMessage>, corsOrigin = '*'): void {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache, no-transform',
       Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': corsOrigin,
+      'Access-Control-Allow-Headers': 'Content-Type',
     });
     res.write(': connected\n\n');
     this.clients.add(res);

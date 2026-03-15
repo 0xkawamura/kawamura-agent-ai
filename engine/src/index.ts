@@ -90,8 +90,7 @@ const server = createServer(async (req, res) => {
   }
 
   if (req.method === 'GET' && url.pathname === '/events') {
-    res.setHeader('Access-Control-Allow-Origin', config.corsOrigin);
-    bridge.handleSseConnection(req, res);
+    bridge.handleSseConnection(req, res, config.corsOrigin);
     return;
   }
 
