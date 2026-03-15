@@ -120,6 +120,7 @@ export class CoreEngine {
 
         this.state.lastSubmissionAt = new Date().toISOString();
         this.state.jobsProcessed += 1;
+        if (jobId) this.watcher.markProcessed(jobId);
         this.setStage('completed');
         this.emitLog('success', 'TEXT response submitted successfully!', 'CoreEngine');
         return;
@@ -170,6 +171,7 @@ export class CoreEngine {
       this.state.lastSubmissionId = submissionResult.submissionId;
       this.state.lastSubmissionAt = new Date().toISOString();
       this.state.jobsProcessed += 1;
+      if (jobId) this.watcher.markProcessed(jobId);
 
       this.setStage('completed');
       this.emitLog('success', `Submitted! ID: ${submissionResult.submissionId ?? 'pending'}`, 'Packer');
