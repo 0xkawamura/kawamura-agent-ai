@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Download, Eye, Play, RotateCcw, Square, Syringe, Trophy } from 'lucide-react'
 
 const ENGINE_URL = 'http://127.0.0.1:8787'
 const OG = '#F97316'                          // orange
@@ -173,30 +174,31 @@ function InjectModal({ onSubmit, onClose }: { onSubmit: (p: string) => void; onC
           </div>
         </div>
 
-        {/* Submit button — Nobel style */}
+        {/* Submit button */}
         <button
           onClick={submit}
           disabled={!value.trim()}
           style={{
             width: '100%',
-            padding: '18px',
-            background: value.trim() ? '#F0EBE3' : '#F9FAFB',
+            padding: '16px',
+            background: value.trim() ? OG : '#F3F4F6',
             border: 'none',
-            borderRadius: 14,
-            fontSize: 16,
+            borderRadius: 999,
+            fontSize: 12,
             fontWeight: 700,
             fontFamily: 'JetBrains Mono, monospace',
-            color: value.trim() ? '#111827' : '#9CA3AF',
+            color: value.trim() ? '#fff' : '#9CA3AF',
             cursor: value.trim() ? 'pointer' : 'not-allowed',
-            letterSpacing: '0.02em',
-            transition: 'background 0.15s, transform 0.1s',
+            letterSpacing: '0.05em',
+            transition: 'opacity 0.15s, transform 0.1s',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           }}
-          onMouseEnter={e => { if (value.trim()) e.currentTarget.style.background = '#E8DDD3' }}
-          onMouseLeave={e => { if (value.trim()) e.currentTarget.style.background = '#F0EBE3' }}
+          onMouseEnter={e => { if (value.trim()) e.currentTarget.style.opacity = '0.85' }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1' }}
           onMouseDown={e => { if (value.trim()) e.currentTarget.style.transform = 'scale(0.98)' }}
           onMouseUp={e => { e.currentTarget.style.transform = 'scale(1)' }}
         >
-          inject
+          <Syringe size={14} /> INJECT PROMPT
         </button>
 
         {/* Dots + hint */}
@@ -340,8 +342,8 @@ function RecentJobs({ jobs, state }: { jobs: Job[]; state: EngineState | null })
                   </div>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'JetBrains Mono, monospace' }}>
-                    🏆 {job.jobId ? `${job.jobId.slice(0, 12)}…` : 'manual'}
+                  <span style={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'JetBrains Mono, monospace', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <Trophy size={10} />{job.jobId ? `${job.jobId.slice(0, 12)}…` : 'manual'}
                   </span>
                   <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                     {job.success && job.responseType !== 'TEXT' && (
@@ -351,12 +353,12 @@ function RecentJobs({ jobs, state }: { jobs: Job[]; state: EngineState | null })
                           style={{
                             fontSize: 10, padding: '2px 9px', borderRadius: 3, cursor: 'pointer',
                             border: '1px solid #DBEAFE', color: '#2563EB', background: '#EFF6FF',
-                            fontWeight: 600,
+                            fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4,
                           }}
                           onMouseEnter={e => (e.currentTarget.style.background = '#DBEAFE')}
                           onMouseLeave={e => (e.currentTarget.style.background = '#EFF6FF')}
                         >
-                          👁 Preview
+                          <Eye size={10} /> Preview
                         </span>
                         <a
                           href={`${ENGINE_URL}/download`}
@@ -365,11 +367,12 @@ function RecentJobs({ jobs, state }: { jobs: Job[]; state: EngineState | null })
                             fontSize: 10, padding: '2px 9px', borderRadius: 3, cursor: 'pointer',
                             border: '1px solid #D1FAE5', color: '#059669', background: '#ECFDF5',
                             fontWeight: 600, textDecoration: 'none',
+                            display: 'inline-flex', alignItems: 'center', gap: 4,
                           }}
                           onMouseEnter={e => (e.currentTarget.style.background = '#D1FAE5')}
                           onMouseLeave={e => (e.currentTarget.style.background = '#ECFDF5')}
                         >
-                          ↓ ZIP
+                          <Download size={10} /> ZIP
                         </a>
                       </>
                     )}
@@ -411,7 +414,7 @@ function Pipeline({ stage, onRefresh }: { stage: string; onRefresh?: () => void 
             <span style={{ fontSize: 10, color: '#9CA3AF', border: '1px solid #E5E7EB', padding: '2px 8px', borderRadius: 4 }}>
               {STAGE_LABEL[stage] ?? stage}
             </span>
-            <span onClick={onRefresh} style={{ fontSize: 12, color: '#9CA3AF', cursor: 'pointer' }}>↺</span>
+            <span onClick={onRefresh} style={{ color: '#9CA3AF', cursor: 'pointer', display: 'flex' }}><RotateCcw size={12} /></span>
           </div>
         }
       />
@@ -641,16 +644,22 @@ export default function CommandCenter() {
           color: state?.running ? '#B750B2' : OG,
           fontSize: 11, fontWeight: 700, padding: '5px 14px', borderRadius: 999,
           cursor: 'pointer', letterSpacing: '0.04em',
+          display: 'flex', alignItems: 'center', gap: 6,
         }}>
-          {state?.running ? '■ STOP ENGINE' : '▶ START ENGINE'}
+          {state?.running ? <><Square size={10} /> STOP ENGINE</> : <><Play size={10} /> START ENGINE</>}
         </button>
 
         <button onClick={() => setShowInject(true)} style={{
-          background: 'transparent', border: '1px solid #E5E7EB',
-          color: '#6B7280', fontSize: 11, fontWeight: 500,
-          padding: '5px 12px', borderRadius: 999, cursor: 'pointer',
-        }}>
-          💉 Inject
+          background: OG, border: 'none',
+          color: '#fff', fontSize: 10, fontWeight: 700,
+          padding: '5px 14px', borderRadius: 999, cursor: 'pointer',
+          letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6,
+          transition: 'opacity 0.15s',
+        }}
+          onMouseEnter={e => (e.currentTarget.style.opacity = '0.85')}
+          onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+        >
+          <Syringe size={12} /> INJECT
         </button>
       </header>
 
