@@ -474,6 +474,7 @@ export default function CommandCenter() {
   const esRef                       = useRef<EventSource | null>(null)
   const counterRef                  = useRef(0)
   const promptRef                   = useRef<string | undefined>(undefined)
+  const agentIdRef                  = useRef<string | undefined>(undefined)
 
   const addLog  = (l: LogEntry)  => setLogs(p => [...p.slice(-499), l])
   const addJob  = (j: Omit<Job, 'num'>) => {
@@ -489,7 +490,7 @@ export default function CommandCenter() {
       es.onerror = () => { setConnected(false); es.close(); setTimeout(connect, 3000) }
 
       es.addEventListener('engine-log',   e => { try { addLog(JSON.parse((e as MessageEvent).data) as LogEntry) }       catch {/**/} })
-      es.addEventListener('engine-state', e => { try { const d = JSON.parse((e as MessageEvent).data) as EngineState; setState(prev => ({ ...prev, ...d })) } catch {/**/} })
+      es.addEventListener('engine-state', e => { try { setState(JSON.parse((e as MessageEvent).data) as EngineState) }  catch {/**/} })
 
       es.addEventListener('submitted', e => {
         try {
@@ -509,14 +510,24 @@ export default function CommandCenter() {
     const iv = setInterval(async () => {
       try {
         const r = await fetch(`${ENGINE_URL}/state`)
-        if (r.ok) { const d = await r.json() as EngineState; setState(prev => ({ ...prev, ...d })); setConnected(true) }
+        if (r.ok) {
+          const d = await r.json() as EngineState
+          setState(d)
+          setConnected(true)
+          if (d.agentId) agentIdRef.current = d.agentId
+        }
       } catch { setConnected(false) }
     }, 5000)
 
     ;(async () => {
       try {
         const r = await fetch(`${ENGINE_URL}/state`)
-        if (r.ok) { setState(await r.json() as EngineState); setConnected(true) }
+        if (r.ok) {
+          const d = await r.json() as EngineState
+          setState(d)
+          setConnected(true)
+          if (d.agentId) agentIdRef.current = d.agentId
+        }
       } catch {/**/}
     })()
 
@@ -610,7 +621,7 @@ export default function CommandCenter() {
           <StatCard label="Jobs Processed"  value={state?.jobsProcessed ?? 0} accent />
           <StatCard label="Submitted"        value={jobs.filter(j => j.success).length} accent />
           <StatCard label="Templates"        value={9} />
-          <StatCard label="Agent ID"         value={state?.agentId ? `${state.agentId.slice(0, 8)}…` : '—'} />
+          <StatCard label="Agent ID"         value={agentIdRef.current ? `${agentIdRef.current.slice(0, 8)}…` : '—'} />
           <StatCard label="Stage"            value={STAGE_LABEL[state?.stage ?? 'idle'] ?? 'Idle'} accent />
         </div>
 
