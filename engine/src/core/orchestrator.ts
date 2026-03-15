@@ -194,7 +194,19 @@ export class CoreEngine {
       this.emitLog('success', `Submitted! ID: ${submissionResult.submissionId ?? 'pending'}`, 'Packer');
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
-      this.bus.emit('error', { stage: this.state.stage, error: err });
+      const msg = err.message;
+
+      // Handle "already submitted" gracefully — not really an error
+      if (msg.includes('already submitted') || msg.includes('already responded')) {
+        this.emitLog('info', `Job ${jobId ?? 'unknown'} was already submitted. Skipping.`, 'CoreEngine');
+        if (jobId) this.watcher.markProcessed(jobId);
+        this.state.jobsProcessed += 1;
+        this.setStage('completed');
+      } else {
+        this.bus.emit('error', { stage: this.state.stage, error: err });
+        // Still mark as processed to avoid infinite retry loops
+        if (jobId) this.watcher.markProcessed(jobId);
+      }
     } finally {
       this.state.processing = false;
       if (this.state.running) this.setStage('watching');

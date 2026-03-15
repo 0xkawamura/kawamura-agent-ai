@@ -210,35 +210,60 @@ export class SeedstrClient {
     };
   }
 
-  private async request<T>(url: string, options: RequestInit): Promise<T> {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20_000);
+  private async request<T>(url: string, options: RequestInit, retries = 2): Promise<T> {
+    let lastError: Error | undefined;
 
-    try {
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      };
-      if (this.config.seedstrApiKey) {
-        headers.Authorization = `Bearer ${this.config.seedstrApiKey}`;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 20_000);
+
+      try {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        };
+        if (this.config.seedstrApiKey) {
+          headers.Authorization = `Bearer ${this.config.seedstrApiKey}`;
+        }
+
+        const response = await fetch(url, {
+          ...options,
+          headers: { ...headers, ...(options.headers as Record<string, string>) },
+          signal: controller.signal,
+        });
+
+        const text = await response.text();
+        const parsed = text ? (JSON.parse(text) as T) : ({} as T);
+
+        if (!response.ok) {
+          const err = new Error(`Seedstr API error (${response.status}): ${text.slice(0, 400)}`);
+          // Only retry on 5xx (server errors)
+          if (response.status >= 500 && attempt < retries) {
+            lastError = err;
+            const backoff = 1000 * (attempt + 1);
+            console.log(`[SeedstrClient] Server error ${response.status}, retrying in ${backoff}ms (attempt ${attempt + 1}/${retries})...`);
+            await new Promise(r => setTimeout(r, backoff));
+            continue;
+          }
+          throw err;
+        }
+
+        return parsed;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        // Retry on abort (timeout) or network errors
+        if (attempt < retries && (lastError.name === 'AbortError' || lastError.message.includes('fetch failed'))) {
+          const backoff = 1000 * (attempt + 1);
+          console.log(`[SeedstrClient] Request failed (${lastError.message}), retrying in ${backoff}ms (attempt ${attempt + 1}/${retries})...`);
+          await new Promise(r => setTimeout(r, backoff));
+          continue;
+        }
+        throw lastError;
+      } finally {
+        clearTimeout(timeout);
       }
-
-      const response = await fetch(url, {
-        ...options,
-        headers: { ...headers, ...(options.headers as Record<string, string>) },
-        signal: controller.signal,
-      });
-
-      const text = await response.text();
-      const parsed = text ? (JSON.parse(text) as T) : ({} as T);
-
-      if (!response.ok) {
-        throw new Error(`Seedstr API error (${response.status}): ${text.slice(0, 400)}`);
-      }
-
-      return parsed;
-    } finally {
-      clearTimeout(timeout);
     }
+
+    throw lastError ?? new Error('Request failed after retries.');
   }
 }
