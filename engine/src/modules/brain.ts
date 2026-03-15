@@ -4,7 +4,42 @@ import type { OpenRouterClient } from '../providers/openrouter-client.js';
 import { PromptClassifier } from '../tools/promptClassifier.js';
 import { generateFromTemplate } from '../tools/templateLibrary.js';
 import { validateFiles } from '../tools/validator.js';
-import type { BuildArtifact, BuildArtifactFile, ClassificationResult } from '../types.js';
+import type { BuildArtifact, BuildArtifactFile, ClassificationResult, GenerationResult } from '../types.js';
+
+/* ── Response-type detection ──────────────────────────────── */
+
+const FILE_KEYWORDS = [
+  'build', 'create', 'make', 'generate', 'develop', 'design',
+  'website', 'web app', 'webapp', 'landing page', 'portfolio',
+  'dashboard', 'app', 'application', 'page', 'site', 'html',
+  'frontend', 'front-end', 'ui', 'interface', 'template',
+  'ecommerce', 'e-commerce', 'shop', 'store', 'blog',
+  'game', 'quiz', 'form', 'calculator', 'tool',
+];
+
+const TEXT_KEYWORDS = [
+  'write', 'explain', 'describe', 'analyze', 'list',
+  'summarize', 'tell me', 'what is', 'how to', 'advice',
+  'strategy', 'plan', 'review', 'compare', 'tweet',
+  'email', 'letter', 'essay', 'article', 'report',
+  'opinion', 'suggestion', 'recommend',
+];
+
+function detectResponseType(prompt: string): 'TEXT' | 'FILE' {
+  const lower = prompt.toLowerCase();
+  let fileScore = 0;
+  let textScore = 0;
+
+  for (const kw of FILE_KEYWORDS) {
+    if (lower.includes(kw)) fileScore++;
+  }
+  for (const kw of TEXT_KEYWORDS) {
+    if (lower.includes(kw)) textScore++;
+  }
+
+  // Default to FILE for the hackathon — the prompt is most likely asking for a project
+  return textScore > fileScore && fileScore === 0 ? 'TEXT' : 'FILE';
+}
 
 function sanitizeFences(raw: string): string {
   return raw.trim()
@@ -84,17 +119,49 @@ export class Brain {
     this.classifier = new PromptClassifier(llm);
   }
 
-  async generateFromPrompt(prompt: string): Promise<BuildArtifact & { classification?: ClassificationResult }> {
+  async generateFromPrompt(prompt: string): Promise<GenerationResult> {
+    // Step 1: Detect whether the prompt asks for code/project (FILE) or text (TEXT)
+    const responseType = detectResponseType(prompt);
+    console.log(`[Brain] Response type detected: ${responseType}`);
+
+    if (responseType === 'TEXT') {
+      console.log('[Brain] Prompt asks for text — generating text-only response.');
+      const textContent = await this.generateTextResponse(prompt);
+      return { responseType: 'TEXT', textContent };
+    }
+
+    // Step 2: FILE path — classify and generate
     const classification = await this.classifier.classifyPrompt(prompt);
     console.log(`[Brain] Classified as "${classification.templateSlug}" (confidence: ${classification.confidence.toFixed(2)})`);
 
     // If classifier returns 'none' or very low confidence, use full LLM
     if (classification.templateSlug === 'none' || classification.confidence < 0.5) {
       console.log('[Brain] No template match — using full LLM generation.');
-      return this.fullGenerate(prompt);
+      const artifact = await this.fullGenerate(prompt);
+      return { responseType: 'FILE', artifact };
     }
 
-    return this.templateFastPath(prompt, classification);
+    const artifact = await this.templateFastPath(prompt, classification);
+    return { responseType: 'FILE', artifact };
+  }
+
+  private async generateTextResponse(prompt: string): Promise<string> {
+    const textSystemPrompt = [
+      'You are Kawamura Agent — a world-class AI assistant.',
+      'Respond to the following prompt with a thorough, well-structured, and professional text response.',
+      'Be helpful, accurate, concise, and insightful.',
+      'Use markdown formatting for readability.',
+      'Do NOT generate code files or JSON — just respond with natural text.',
+    ].join('\n');
+
+    return this.llm.completeWithFallback(
+      [
+        { role: 'system', content: textSystemPrompt },
+        { role: 'user', content: prompt },
+      ],
+      this.config.llmMaxTokens,
+      this.config.llmTemperature,
+    );
   }
 
   private async templateFastPath(

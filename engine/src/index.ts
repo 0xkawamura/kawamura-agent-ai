@@ -52,7 +52,7 @@ const watcher = new Watcher(config, seedstrClient, bus);
 const brain = new Brain(config, llmClient);
 const builder = new Builder(config);
 const packer = new Packer(config, seedstrClient);
-const engine = new CoreEngine(bus, watcher, brain, builder, packer);
+const engine = new CoreEngine(bus, watcher, brain, builder, packer, seedstrClient);
 
 bus.on('log', payload => bridge.broadcastLog(payload));
 bus.on('state', payload => bridge.broadcastState(payload));

@@ -3,6 +3,7 @@ import type { Brain } from '../modules/brain.js';
 import type { Builder } from '../modules/builder.js';
 import type { Packer } from '../modules/packer.js';
 import type { Watcher } from '../modules/watcher.js';
+import type { SeedstrClient } from '../providers/seedstr-client.js';
 import type { EngineState, EngineStage } from '../types.js';
 import { createLog } from '../utils/logger.js';
 
@@ -20,6 +21,7 @@ export class CoreEngine {
     private readonly brain: Brain,
     private readonly builder: Builder,
     private readonly packer: Packer,
+    private readonly seedstrClient: SeedstrClient,
   ) {
     this.wireEvents();
   }
@@ -89,31 +91,60 @@ export class CoreEngine {
 
   private async executePipeline(prompt: string, jobId?: string): Promise<void> {
     try {
-      // Stage: classifying
+      // Stage: classifying + generating
       this.setStage('classifying');
-      this.emitLog('info', 'Stage 2 / Classifying prompt...', 'Brain');
+      this.emitLog('info', 'Stage 1 / Detecting response type & classifying...', 'Brain');
       this.emitState();
 
-      // Stage: generating (brain handles both classify + generate)
       this.setStage('generating');
-      this.emitLog('info', 'Stage 3 / Brain generating output...', 'Brain');
+      this.emitLog('info', 'Stage 2 / Brain generating output...', 'Brain');
       this.emitState();
 
-      const artifact = await this.brain.generateFromPrompt(prompt);
-      const templateSlug = (artifact as { classification?: { templateSlug?: string } }).classification?.templateSlug;
+      const result = await this.brain.generateFromPrompt(prompt);
+
+      // ─── TEXT RESPONSE PATH ───────────────────────────
+      if (result.responseType === 'TEXT' && result.textContent) {
+        this.emitLog('success', `Brain produced TEXT response (${result.textContent.length} chars).`, 'Brain');
+
+        this.setStage('submitting');
+        this.emitLog('info', `Submitting TEXT response${jobId ? ` to job ${jobId}` : ''}...`, 'Packer');
+        this.emitState();
+
+        if (jobId) {
+          const submissionResult = await this.seedstrClient.submitTextOnly(jobId, result.textContent);
+          this.bus.emit('submitted', submissionResult);
+          this.state.lastSubmissionId = submissionResult.submissionId;
+        } else {
+          this.emitLog('warn', 'No jobId — TEXT response generated but not submitted.', 'CoreEngine');
+        }
+
+        this.state.lastSubmissionAt = new Date().toISOString();
+        this.state.jobsProcessed += 1;
+        this.setStage('completed');
+        this.emitLog('success', 'TEXT response submitted successfully!', 'CoreEngine');
+        return;
+      }
+
+      // ─── FILE RESPONSE PATH (existing pipeline) ──────
+      if (!result.artifact) {
+        throw new Error('Brain returned FILE response but no artifact.');
+      }
+
+      const artifact = result.artifact;
+      const templateSlug = artifact.classification?.templateSlug;
       if (templateSlug) {
         this.state.lastTemplateSlug = templateSlug;
         this.bus.emit('classified', {
           templateSlug,
-          confidence: (artifact as { classification?: { confidence?: number } }).classification?.confidence ?? 1,
-          slots: (artifact as { classification?: { slots?: Record<string, string> } }).classification?.slots ?? {},
+          confidence: artifact.classification?.confidence ?? 1,
+          slots: artifact.classification?.slots ?? {},
         });
       }
       this.emitLog('success', `Brain produced ${artifact.files.length} files.${templateSlug ? ` Template: ${templateSlug}` : ''}`, 'Brain');
 
       // Stage: building
       this.setStage('building');
-      this.emitLog('info', 'Stage 4 / Builder writing files...', 'Builder');
+      this.emitLog('info', 'Stage 3 / Builder writing files...', 'Builder');
       this.emitState();
 
       const buildResult = await this.builder.materialize(artifact);
@@ -122,7 +153,7 @@ export class CoreEngine {
 
       // Stage: packing
       this.setStage('packing');
-      this.emitLog('info', 'Stage 5 / Packer creating archive...', 'Packer');
+      this.emitLog('info', 'Stage 4 / Packer creating archive...', 'Packer');
       this.emitState();
 
       const zipResult = await this.packer.createZip(buildResult.outputDir);
@@ -131,7 +162,7 @@ export class CoreEngine {
 
       // Stage: submitting
       this.setStage('submitting');
-      this.emitLog('info', `Stage 6 / Submitting to Seedstr${jobId ? ` (job: ${jobId})` : ''}...`, 'Packer');
+      this.emitLog('info', `Stage 5 / Submitting to Seedstr${jobId ? ` (job: ${jobId})` : ''}...`, 'Packer');
       this.emitState();
 
       const submissionResult = await this.packer.submit(zipResult.zipPath, jobId);

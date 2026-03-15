@@ -60,6 +60,16 @@ export interface BuildArtifact {
   notes?: string[];
 }
 
+export type ResponseType = 'TEXT' | 'FILE';
+
+export interface GenerationResult {
+  responseType: ResponseType;
+  /** Present when responseType is 'FILE' */
+  artifact?: BuildArtifact & { classification?: ClassificationResult };
+  /** Present when responseType is 'TEXT' */
+  textContent?: string;
+}
+
 export interface BuildResult {
   outputDir: string;
   filesWritten: number;

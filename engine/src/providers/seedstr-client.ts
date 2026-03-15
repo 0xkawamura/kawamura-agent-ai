@@ -174,6 +174,10 @@ export class SeedstrClient {
     return { submissionId: undefined, raw: { uploaded: true, file: fileAttachment } };
   }
 
+  async submitTextOnly(jobId: string, content: string): Promise<SubmissionResult> {
+    return this.submitResponse(jobId, content);
+  }
+
   private async request<T>(url: string, options: RequestInit): Promise<T> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 20_000);
