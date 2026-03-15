@@ -137,37 +137,27 @@ export class PromptClassifier {
   private async fillSlotsViaLLM(prompt: string, templateSlug: string, slotNames: string[]): Promise<Record<string, string>> {
     const slotsJson = slotNames.map(s => `"${s}": "value"`).join(', ');
 
-    try {
-      const response = await this.llm.complete(
-        [
-          {
-            role: 'system',
-            content: `You are filling content slots for a "${templateSlug}" web template. Extract relevant content from the user's prompt and fill each slot with compelling, specific copy. Be creative and professional. Respond ONLY with valid JSON (no fences): {${slotsJson}}`,
-          },
-          { role: 'user', content: `Prompt: ${prompt}` },
-        ],
-        'anthropic/claude-sonnet-4-5',
-        2048,
-        0.8,
-      );
+    const response = await this.llm.completeWithFallback(
+      [
+        {
+          role: 'system',
+          content: `You are filling content slots for a "${templateSlug}" web template. Extract relevant content from the user's prompt and fill each slot with compelling, specific copy. Be creative and professional. Respond ONLY with valid JSON (no fences): {${slotsJson}}`,
+        },
+        { role: 'user', content: `Prompt: ${prompt}` },
+      ],
+      2048,
+      0.8,
+    );
 
-      const clean = response.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
-      const parsed = JSON.parse(clean) as Record<string, string>;
+    const clean = response.trim().replace(/^```json?\s*/i, '').replace(/\s*```$/i, '');
+    const parsed = JSON.parse(clean) as Record<string, string>;
 
-      // Ensure all slots have values
-      const result: Record<string, string> = {};
-      for (const slot of slotNames) {
-        result[slot] = typeof parsed[slot] === 'string' && parsed[slot].trim()
-          ? parsed[slot].trim()
-          : `[${slot}]`;
-      }
-      return result;
-    } catch {
-      const defaults: Record<string, string> = {};
-      for (const slot of slotNames) {
-        defaults[slot] = `[${slot}]`;
-      }
-      return defaults;
+    const result: Record<string, string> = {};
+    for (const slot of slotNames) {
+      result[slot] = typeof parsed[slot] === 'string' && parsed[slot].trim()
+        ? parsed[slot].trim()
+        : slot;
     }
+    return result;
   }
 }

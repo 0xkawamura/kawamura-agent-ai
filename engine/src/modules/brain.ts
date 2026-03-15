@@ -141,8 +141,14 @@ export class Brain {
       return { responseType: 'FILE', artifact };
     }
 
-    const artifact = await this.templateFastPath(prompt, classification);
-    return { responseType: 'FILE', artifact };
+    try {
+      const artifact = await this.templateFastPath(prompt, classification);
+      return { responseType: 'FILE', artifact };
+    } catch (err) {
+      console.warn(`[Brain] Template fast-path failed (${(err as Error).message}) — falling back to full LLM.`);
+      const artifact = await this.fullGenerate(prompt);
+      return { responseType: 'FILE', artifact };
+    }
   }
 
   private async generateTextResponse(prompt: string): Promise<string> {
