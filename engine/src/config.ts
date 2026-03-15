@@ -23,6 +23,7 @@ export interface EngineConfig {
   autoStart: boolean;
   seedstrApiKey?: string;
   seedstrApiUrl: string;
+  seedstrUploadUrl: string;
   minBudget: number;
   pollMinMs: number;
   pollMaxMs: number;
@@ -139,6 +140,7 @@ export function loadConfig(): EngineConfig {
     autoStart: toBool(process.env.ENGINE_AUTO_START, true),
     seedstrApiKey: process.env.SEEDSTR_API_KEY,
     seedstrApiUrl: process.env.SEEDSTR_API_URL ?? 'https://www.seedstr.io/api/v2',
+    seedstrUploadUrl: process.env.SEEDSTR_UPLOAD_URL ?? 'https://www.seedstr.io/api/v1',
     minBudget: toFloat(process.env.MIN_BUDGET, 0),
     pollMinMs,
     pollMaxMs,

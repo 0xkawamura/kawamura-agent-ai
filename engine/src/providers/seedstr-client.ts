@@ -123,7 +123,7 @@ export class SeedstrClient {
     const base64Content = fileBuffer.toString('base64');
 
     const result = await this.request<{ success: boolean; files: FileUploadResult[] }>(
-      `${this.config.seedstrApiUrl}/upload`,
+      `${this.config.seedstrUploadUrl}/upload`,
       {
         method: 'POST',
         body: JSON.stringify({
